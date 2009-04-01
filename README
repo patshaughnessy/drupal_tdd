@@ -1,0 +1,12 @@
+This repository contains PHP code designed to make Test Driven Development with Drupal easy and enjoyable. Among other things, we will be applying testing ideas from the Ruby on Rails framework to Drupal/PHP. We'll also be writing sample apps to illustrate how to use the tools here to develop Drupal modules using TDD and PHPUnit.
+
+For now we have a single PHP file, phpunit_setup.inc, which allows you to use MySQL transactions and a separate test database for running PHPUnit test cases in the Drupal framework.
+
+For more information or to provide feedback/bugs, see:
+http://patshaughnessy.net/drupal-test-database
+
+For information about how to use this with Drupal 5, see:
+http://markbennett.ca/2009/03/bringing-tdd-to-drupal-5
+
+
+Copyright (c) 2009 [Patrick Shaughnessy], released under the MIT license
