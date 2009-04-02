@@ -63,8 +63,8 @@ function each_table($table_callback)
   $database = substr($url['path'], 1);
   
   $result = db_query("SELECT table_name FROM information_schema.tables WHERE table_schema = '$database'");
-  while ($table = db_result($result)) {
-    $table_callback($table);
+  while ($table = db_fetch_array($result)) {
+    $table_callback($table['table_name']);
   }
 }
 
@@ -78,8 +78,35 @@ function drop($table)
   db_query("DROP TABLE $table");
 }
 
-function create_test_drupal_schema()
-{
+/**
+ * Install modules associated with the default profile.
+ */
+function install_modules() {
+
+  require_once './includes/install.inc';
+
+  // Is the drupal_install_system() function available?
+  // If it is we'll use that first
+  if (function_exists("drupal_install_system")) {
+    // Do the Drupal 6 style install
+    install_modules__with_drupal_install_system();
+  }
+  else if (function_exists("drupal_install_profile")) {
+    // Do the Drupal 5 style install
+    install_modules__with_drupal_install_profile();
+  }
+  else {
+    // We don't support the configuration you're using!
+    die("Sorry phpunit_setup doesn't recognize your Drupal installation.");
+  }
+}
+
+/**
+ * Use the drupal_install_system() function to install the test database.
+ *
+ * drupal_install_system() has been available since Drupal 6.
+ */
+function install_modules__with_drupal_install_system() {
   include_once './includes/install.inc';
   drupal_install_system();
   drupal_install_modules(drupal_verify_profile('default', 'en'));
@@ -88,6 +115,49 @@ function create_test_drupal_schema()
   menu_rebuild();
   actions_synchronize();
   _drupal_flush_css_js();
+}
+
+/**
+ * Use the drupal_install_profile() function to install the test database.
+ *
+ * drupal_install_profile() is available in Drupal 5.
+ */
+function install_modules__with_drupal_install_profile() {
+
+  drupal_bootstrap(DRUPAL_BOOTSTRAP_CONFIGURATION);
+  // This must go after drupal_bootstrap(), which unsets globals!
+  global $profile, $install_locale;
+  require_once './modules/system/system.install';
+  require_once './includes/file.inc';
+
+  // Load module basics (needed for hook invokes).
+  include_once './includes/module.inc';
+  $module_list['system']['filename'] = 'modules/system/system.module';
+  $module_list['filter']['filename'] = 'modules/filter/filter.module';
+  module_list(TRUE, FALSE, FALSE, $module_list);
+  drupal_load('module', 'system');
+  drupal_load('module', 'filter');
+
+  // Decide which profile to use.
+  $profile = 'default';
+
+  // Load the profile.
+  require_once "./profiles/$profile/$profile.profile";
+
+  // Verify existence of all required modules.
+  $modules = drupal_verify_profile($profile, $install_locale);
+  if (!$modules) {
+    // Missing required modules
+    die("Missing required modules!");
+  }
+
+  // Perform actual installation defined in the profile.
+  drupal_install_profile($profile, $modules);
+}
+
+function create_test_drupal_schema()
+{
+  install_modules();
 
   variable_set('user_mail_status_activated_notify', FALSE);
   $account = user_load(1);
