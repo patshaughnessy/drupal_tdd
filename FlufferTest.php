@@ -178,5 +178,19 @@ class FlufferTests extends PHPUnit_Framework_TestCase
     $this->assertTrue(is_numeric($random_integer), "The random integer should be a number.");
     $this->assertGreaterThan(0, $random_integer);
   }
+
+  /**
+   * Generate a random currency value.
+   *
+   * Currency values are never stored with more than two digits of precision.
+   */
+  public function testFluffCurrency() {
+    // Generate a random currency amount
+    $random_dollar = Fluffer::fluffCurrency();
+
+    // Make sure the number is precise to only three significant digits
+    $rounded_dollar = round($random_dollar, 2);
+    $this->assertEquals($rounded_dollar, $random_dollar, 0.005);
+  }
 }
 ?>

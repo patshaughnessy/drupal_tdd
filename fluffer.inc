@@ -76,6 +76,20 @@ class Fluffer
   public static function fluffInt() {
     return rand();
   }
+
+  /**
+   * Generate some random currency.
+   *
+   * Currency values are always rounded to two significant digits (pennies).
+   */
+  public static function fluffCurrency() {
+
+    $random_int = rand();
+    $random_float = ((float) $random_int) / 1000.0;
+    $random_currency = round($random_float, 2);
+
+    return $random_currency;
+  }
 }
 
  ?>
