@@ -3,11 +3,21 @@
 require_once './includes/bootstrap.inc';
 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
-validate_test_database();
-db_set_active("test");
-drop_test_tables();
-create_test_drupal_schema();
-enable_mysql_transactions();
+// If we can use transactions then setup the DB once here
+// The transactions will protect it from changes.
+if (canUseTransactions())
+{
+  phpunit_setup();
+}
+
+function phpunit_setup()
+{
+  validate_test_database();
+  db_set_active("test");
+  drop_test_tables();
+  create_test_drupal_schema();
+  enable_mysql_transactions();
+}
 
 function validate_test_database()
 {
@@ -165,5 +175,66 @@ function create_test_drupal_schema()
   user_save($account, $merge_data);  
 }
 
+/**
+ * Returns true if DrupalTDD can use transactions.
+ */
+function canUseTransactions() {
+  $VERSION = VERSION;
+
+  if ($VERSION >= 6.0)
+  {
+    return true;
+  }
+  return false;
+}
+
+class DrupalTddTestCase extends PHPUnit_Framework_TestCase
+{
+  private static $isDbLoaded = false;
+
+  public function setup()
+  {
+    if (canUseTransactions())
+    {
+      $this->setup_with_transactions();
+    }
+    else
+    {
+      $this->setup_no_transactions();
+    }
+  }
+
+  public function setup_no_transactions()
+  {
+    // Rebuild a fresh database
+    phpunit_setup();
+  }
+
+  public function setup_with_transactions()
+  {
+    db_query("BEGIN");
+  }
+
+  public function teardown()
+  {
+    if (canUseTransactions())
+    {
+      $this->teardown_with_transactions();
+    }
+    else
+    {
+      $this->teardown_no_transactions();
+    }
+  }
+
+  public function teardown_no_transactions()
+  {
+  }
+
+  public function teardown_with_transactions()
+  {
+    db_query("ROLLBACK");
+  }
+}
 
 ?>
