@@ -3,12 +3,7 @@
 require_once './includes/bootstrap.inc';
 drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
 
-// If we can use transactions then setup the DB once here
-// The transactions will protect it from changes.
-if (canUseTransactions())
-{
-  phpunit_setup();
-}
+phpunit_setup();
 
 function phpunit_setup()
 {
@@ -17,6 +12,12 @@ function phpunit_setup()
   drop_test_tables();
   create_test_drupal_schema();
   enable_mysql_transactions();
+
+  // Dump the database if we won't be using transactions
+  if (!canUseTransactions())
+  {
+    phpunit_setup_dump_the_database();
+  }
 }
 
 function validate_test_database()
@@ -170,9 +171,34 @@ function create_test_drupal_schema()
   install_modules();
 
   variable_set('user_mail_status_activated_notify', FALSE);
-  $account = user_load(1);
+  $account = user_load(array('uid'=> 1));
   $merge_data = array('name' => 'admin', 'pass' => 'adminpassword', 'roles' => array(), 'status' => 1);
   user_save($account, $merge_data);  
+}
+
+function phpunit_setup_dump_the_database()
+{
+  global $db_url;
+
+  // Call mysqldump to save the database
+  $url = parse_url($db_url['test']);
+  $db_name_parts = explode('/', $url['path']);
+  while (!($db_name = array_shift($db_name_parts)));
+  $command = "mysqldump --add-drop-table --host=" . $url['host'] . " --result-file=.db_dump.sql --user=" . $url['user'] . " --password=" . $url['pass']  . " litdistco_test";
+  system($command);
+}
+
+function phpunit_setup_load_db_dump()
+{
+  global $db_url;
+
+  // run the MySQL client to import a fresh copy of the DB
+  $url = parse_url($db_url['test']);
+  $db_name_parts = explode('/', $url['path']);
+  while (!($db_name = array_shift($db_name_parts)));
+  
+  $command = "mysql --user=" . $url['user'] . " --host=" . $url['host'] . " --password=" . $url['pass'] . " " . $db_name . " < .db_dump.sql";
+  system($command);
 }
 
 /**
@@ -188,7 +214,7 @@ function canUseTransactions() {
   return false;
 }
 
-class DrupalTddTestCase extends PHPUnit_Framework_TestCase
+abstract class DrupalTddTestCase extends PHPUnit_Framework_TestCase
 {
   private static $isDbLoaded = false;
 
@@ -202,12 +228,15 @@ class DrupalTddTestCase extends PHPUnit_Framework_TestCase
     {
       $this->setup_no_transactions();
     }
+
+    // We always want to flush the node case
+    node_load(array(), NULL, TRUE);
   }
 
   public function setup_no_transactions()
   {
-    // Rebuild a fresh database
-    phpunit_setup();
+    // Load a copy of the dumped DB
+    phpunit_setup_load_db_dump();
   }
 
   public function setup_with_transactions()
@@ -234,6 +263,37 @@ class DrupalTddTestCase extends PHPUnit_Framework_TestCase
   public function teardown_with_transactions()
   {
     db_query("ROLLBACK");
+  }
+
+  /**
+   * Compares the equality of two nodes.
+   */
+  public function assertNodesEqual($node1, $node2)
+  {
+    // A list of values to skip in the comparison
+    $to_skip = array('is_new', 'revision_timestamp');
+
+    // Compare each property of the nodes
+    foreach ($node1 as $property_name => $value)
+    {
+      $skipped = 0;
+
+      // Skip properties we're not comparing
+      foreach ($to_skip as $property_to_skip)
+      {
+
+        if ($property_name == $property_to_skip)
+        {
+          $skipped = 1;
+        }
+      }
+
+      if (!$skipped)
+      {
+        $this->assertEquals($node1->$property_name, $node2->$property_name, "The $property_name values should match!");
+      }
+
+    }
   }
 }
 
