@@ -2,7 +2,7 @@
 
 require_once 'fluffer.inc';
 
-class FlufferTests extends PHPUnit_Framework_TestCase
+class FlufferTest extends PHPUnit_Framework_TestCase
 {  
   public function setup()
   {
@@ -102,6 +102,63 @@ class FlufferTests extends PHPUnit_Framework_TestCase
     $this->assertStringOnlyContainsCharset($random_char, $charset);
   }
 
+  public function assertIsDate($date)
+  {
+    // Break the generated date into pieces
+    $parts = explode("-", $date);
+    $random_year = $parts[0];
+    $random_month = $parts[1];
+    $random_day = $parts[2];
+
+    // Make sure the first four digits are a year (0-9999)
+    $this->assertTrue(is_numeric($random_year), "The year is a number");
+    $this->assertGreaterThan(0, $random_year, "The year is greater than zero");
+
+    // Make sure the six and seventh digits a month (01-12)
+    $this->assertTrue(is_numeric($random_month), "The month must be a number");
+    $this->assertGreaterThan(0, $random_month, "The month is always greater than zero.");
+    $this->assertLessThanOrEqual(12, $random_month, "The month is always less or equal to 12");
+
+    // Make sure the ninth and tenth digits are a day
+    // Use a lookup table to figure out how many days should be in each month
+    $days_in_month = array(
+      "01" => 31,
+      "02" => 28,
+      "03" => 31,
+      "04" => 30,
+      "05" => 31,
+      "06" => 30,
+      "07" => 31,
+      "08" => 31,
+      "09" => 30,
+      "10" => 31,
+      "11" => 30,
+      "12" => 31,
+    );
+    $this->assertTrue(is_numeric($random_day), "The day must be a number");
+    $this->assertGreaterThan(0, $random_day);
+    $days_in_random_month = $days_in_month[$random_month];
+    $this->assertLessThanOrEqual($days_in_random_month, $random_day, "$random_day is to high.  The $random_month month doesn\'t have more than $days_in_random_month days in it!");
+  }
+
+  public function assertIsTime($time)
+  {
+    // Break the time into pieces
+    list($hour, $minutes, $seconds) = explode(':', $time);
+
+    // The hours should be between 0 and 23
+    $this->assertGreaterThan(0, $hour);
+    $this->assertLessThanOrEqual(23, $hour);
+
+    // The minutes should be between 0 and 59
+    $this->assertGreaterThan(0, $minutes);
+    $this->assertLessThanOrEqual(59, $minutes);
+
+    // The seconds should be between 0 and 59
+    $this->assertGreaterThan(0, $seconds);
+    $this->assertLessThanOrEqual(59, $seconds);
+  }
+
   /**
    * Dates should be randomly generated in the format YYYY-MM-DD.
    *
@@ -112,42 +169,7 @@ class FlufferTests extends PHPUnit_Framework_TestCase
     for ($i = 0; $i < 100; $i++) {
       // Generate a random date
       $random_date = Fluffer::fluffDate();
-
-      // Break the generated date into pieces
-      $parts = explode("-", $random_date);
-      $random_year = $parts[0];
-      $random_month = $parts[1];
-      $random_day = $parts[2];
-
-      // Make sure the first four digits are a year (0-9999)
-      $this->assertTrue(is_numeric($random_year), "The year is a number");
-      $this->assertGreaterThan(0, $random_year, "The year is greater than zero");
-
-      // Make sure the six and seventh digits a month (01-12)
-      $this->assertTrue(is_numeric($random_month), "The month must be a number");
-      $this->assertGreaterThan(0, $random_month, "The month is always greater than zero.");
-      $this->assertLessThanOrEqual(12, $random_month, "The month is always less or equal to 12");
-
-      // Make sure the ninth and tenth digits are a day
-      // Use a lookup table to figure out how many days should be in each month
-      $days_in_month = array(
-        "01" => 31,
-        "02" => 28,
-        "03" => 31,
-        "04" => 30,
-        "05" => 31,
-        "06" => 30,
-        "07" => 31,
-        "08" => 31,
-        "09" => 30,
-        "10" => 31,
-        "11" => 30,
-        "12" => 31,
-      );
-      $this->assertTrue(is_numeric($random_day), "The day must be a number");
-      $this->assertGreaterThan(0, $random_day);
-      $days_in_random_month = $days_in_month[$random_month];
-      $this->assertLessThanOrEqual($days_in_random_month, $random_day, "$random_day is to high.  The $random_month month doesn\'t have more than $days_in_random_month days in it!");
+      $this->assertIsDate($random_date);
     }
   }
 
@@ -191,6 +213,16 @@ class FlufferTests extends PHPUnit_Framework_TestCase
     // Make sure the number is precise to only three significant digits
     $rounded_dollar = round($random_dollar, 2);
     $this->assertEquals($rounded_dollar, $random_dollar, 0.005);
+  }
+
+  public function testFluffTimestamp()
+  {
+    // Generate a random timestamp
+    $random_timestamp = Fluffer::fluffTimestamp();
+
+    // Make sure the timestamp is a integer in seconds since the epoch
+    $this->assertTrue(is_int($random_timestamp), "The timestamp should be a number");
+
   }
 }
 ?>

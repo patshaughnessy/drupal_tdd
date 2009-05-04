@@ -50,10 +50,22 @@ class Fluffer
   /**
    * Generate a random date.
    */
-  public static function fluffDate() {
+  public static function fluffDate($max_year=9999, $max_month=12) {
 
-    $random_year = rand(1, 9999);
-    $random_month = rand(1, 12);
+    // Generate a random year
+    $random_year = rand(1, $max_year);
+
+    // Generate a random month
+    // If we're at the max year, make sure we don't go over the max month!
+    if ($random_year == $max_year)
+    {
+      $random_month = rand(1,$max_month);
+    }
+    else
+    {
+      $random_month = rand(1, 12);
+    }
+
     $random_day = rand(1, Fluffer::$DAYS_IN_MONTH[$random_month-1]);
 
     $random_date = sprintf("%04d-%02d-%02d", $random_year, $random_month, $random_day);
@@ -89,6 +101,26 @@ class Fluffer
     $random_currency = round($random_float, 2);
 
     return $random_currency;
+  }
+
+  public static function fluffTime()
+  {
+    $random_hour = rand(0, 23);
+    $random_minute = rand(0, 59);
+    $random_seconds = rand(0, 59);
+
+    return "$random_hour:$random_minute:$random_seconds";
+  }
+
+  /**
+   * Return a random UNIX timestamp.
+   */
+  public static function fluffTimestamp()
+  {
+    // Time stamps are in seconds since the epoch (1970-01-01 00:00:00 UTC)
+    $random_timestamp = rand(0, 10000000000);
+
+    return $random_timestamp;
   }
 }
 
