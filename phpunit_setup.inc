@@ -34,6 +34,7 @@ function validate_test_database()
   }
 
   $url = parse_url($db_url['test']);
+  $url['pass'] = isset($url['pass']) ? urldecode($url['pass']) : '';
   if (!stristr($db_url['test'], 'test')) {
     echo "Error: the word 'test' does not appear in your test database URL in settings.php.\n";
     echo "Please include 'test' in your test database name.\n";
