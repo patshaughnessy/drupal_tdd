@@ -5,6 +5,6 @@ For now we have a single PHP file, phpunit_setup.inc, which allows you to use My
 For more information or to provide feedback/bugs, see:
 http://patshaughnessy.net/drupal-test-database
 
-As of the current release you can use phpunit_setup.inc in Drupal 5 and 6.
+As of the current release you can use phpunit_setup.inc in Drupal 5 and 6. Test
 
 Copyright (c) 2009 [Patrick Shaughnessy, Mark Bennett], released under the MIT license
